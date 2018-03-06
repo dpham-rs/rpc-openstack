@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# Copyright 2014, Rackspace US, Inc.
+# Copyright 2018, Rackspace US, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -15,7 +15,10 @@
 
 # (c) 2014, Kevin Carter <kevin.carter@rackspace.com>
 # Fork by David Pham <david.pham@rackspace.com>
+# With contributions by Benjamin Calderon <benjamin.calderon@rackspace.com>
 # Yet again, completely buchered by Jonathan <jonathan.almaleh@rackspace.com>
+
+# Version for PIKE.
 
 import argparse
 import json
@@ -24,6 +27,7 @@ import netaddr
 
 PART = 'RPC'
 PREFIX_NAME = 'RPC'
+VERSION = 'RPC F5 Superman config script version Pike1.1'
 
 SNAT_POOL = (
     '### CREATE SNATPOOL ###\n'
@@ -81,9 +85,8 @@ MONITORS = [
     r' HTTP/1.1\r\nHost: rpc\r\n\r\n" }',
     r'create ltm monitor tcp /' + PART + '/' + PREFIX_NAME + '_MON_TCP_REPO_GIT {'
     r' defaults-from tcp destination *:9418 }',
-    r'create ltm monitor http /' + PART + '/' + PREFIX_NAME + '_MON_HTTP_MAGNUM {'
-    r' defaults-from http destination *:9511 recv "200 OK" send "GET /v1/'
-    r' HTTP/1.1\r\nHost: rpc\r\n\r\n" }',
+    r'create ltm monitor tcp /' + PART + '/' + PREFIX_NAME + '_MON_TCP_NOVA_PLACEMENT { defaults-from'
+    r' tcp destination *:8780 }',
     '\n'
 ]
 
@@ -425,13 +428,12 @@ POOL_PARTS = {
         'group': 'pkg_repo',
         'hosts': []
     },
-    'magnum': {
-        'port': 9511,
-        'backend_port': 9511,
-        'mon_type': '/' + PART + '/' + 'RPC_MON_HTTP_MAGNUM',
-        'group': 'magnum_all',
-        'hosts': [],
-        'make_public': True,
+    'nova_api_placement': {
+        'port': 8780,
+        'backend_port': 8780,
+        'mon_type': '/' + PART + '/' + PREFIX_NAME + '_MON_TCP_NOVA_PLACEMENT',
+        'group': 'nova_api_placement',
+        'hosts': []
     }
 }
 
@@ -507,7 +509,6 @@ def file_find(filename, user_file=None, pass_exception=False):
             raise SystemExit('No file found at: %s' % file_check)
         else:
             return False
-
 
 def args():
     """Setup argument Parsing."""
@@ -596,6 +597,14 @@ def args():
         default=False,
         action='store_true'
     )
+    parser.add_argument(
+        '-v',
+        '--version',
+        help='Gives version of the config script for a specific RPC deployment',
+        required=False,
+        default=False,
+        action='store_true'
+    )
 
     parser.add_argument(
         '-e',
@@ -637,6 +646,11 @@ def main():
     """Run the main application."""
     # Parse user args
     user_args = args()
+
+    # Display version and then exit program
+    if user_args ['version']:
+        print 'This is version "%s" ' % VERSION
+        exit(0)
 
     # Get the contents of the system environment json
     environment_file = file_find(filename=user_args['file'])
@@ -899,3 +913,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
