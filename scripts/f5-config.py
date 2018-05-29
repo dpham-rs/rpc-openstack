@@ -179,7 +179,7 @@ SEC_AFM_RULES = (
     'create security firewall port-list RPC_VIP_PORTS '
     '{ ports add { 80 { } 443 { } 3142 { } 3306 { } 3307 { } 5000 { } 6080 { } 6082 { } 8000 { } 8003 { } 8004 { } '
     '8080 { } 8181 { } 8443 { } 8774 { } 8775 { } 8776 { } 8888 { } 9191 { } 9200 { } 9292 { } 9418 { } 9511 { } '
-    '9696 { } 35357 { } } }\n'
+    '9696 { } 35357 { } 8780 { } } }\n'
     '\n'
     #Addr Lists
     'create security firewall address-list RPC_PUB_VIP_ALLOW_IPS { addresses add { 0.0.0.0/0 } }\n'
@@ -337,7 +337,7 @@ POOL_PARTS = {
     'nova_novnc_console': {
         'port': 6080,
         'backend_port': 6080,
-        'mon_type': PART + PREFIX_NAME + '_MON_HTTP_NOVA_NOVNC_CONSOLE',
+        'mon_type': '/' +  PART + '/' + PREFIX_NAME + '_MON_HTTP_NOVA_NOVNC_CONSOLE',
         'group': 'nova_console',
         'hosts': [],
         'make_public': True,
@@ -913,4 +913,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
