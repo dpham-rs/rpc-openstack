@@ -35,7 +35,7 @@ esac
 
 # Save token to file
 save_token() {
-    echo "$token" > /var/tmp/keystone-token-test
+    echo "$token" > /var/tmp/keystone-token-queens
 }
 
 # Get new token
@@ -114,9 +114,9 @@ EOF
 # Read token from file or get new one
 get_token() {
     # If file exists
-    if [[ -f /var/tmp/keystone-token-test ]]; then
+    if [[ -f /var/tmp/keystone-token-queens ]]; then
         # Read into token variable
-        read -r token < /var/tmp/keystone-token-test
+        read -r token < /var/tmp/keystone-token-queens
     else
         # Get new one
         new_token
