@@ -18,7 +18,7 @@
 # With contributions by Benjamin Calderon <benjamin.calderon@rackspace.com>
 # Yet again, completely buchered by Jonathan <jonathan.almaleh@rackspace.com>
 
-# Version for PIKE.
+# Version for QUEENS.
 
 import argparse
 import json
@@ -27,7 +27,7 @@ import netaddr
 
 PART = 'RPC'
 PREFIX_NAME = 'RPC'
-VERSION = 'RPC F5 Superman config script version Pike1.1'
+VERSION = 'RPC F5 Superman config script version Queens1.1'
 
 SNAT_POOL = (
     '### CREATE SNATPOOL ###\n'
@@ -64,13 +64,8 @@ MONITORS = [
     r'create ltm monitor https /' + PART + '/' + PREFIX_NAME + '_MON_HTTPS_NOVA_SPICE_CONSOLE {'
     r' defaults-from https destination *:6082 recv "200 OK" send "HEAD /'
     r' HTTP/1.1\r\nHost: rpc\r\n\r\n" }',
-    r'create ltm monitor http /' + PART + '/' + PREFIX_NAME + '_MON_HTTP_NOVA_NOVNC_CONSOLE {'
-    r' defaults-from http destination *:6080 recv "200 OK" send "HEAD /vnc_lite.html'
-    r' HTTP/1.1\r\nHost: rpc\r\n\r\n" }',
     r'create ltm monitor tcp /' + PART + '/' + PREFIX_NAME + '_MON_TCP_HEAT_API_CFN { defaults-from tcp'
     r' destination *:8000 }',
-    r'create ltm monitor tcp /' + PART + '/' + PREFIX_NAME + '_MON_TCP_HEAT_API_CLOUDWATCH {'
-    r' defaults-from tcp destination *:8003 }',
     r'create ltm monitor tcp /' + PART + '/' + PREFIX_NAME + '_MON_TCP_KIBANA { defaults-from tcp'
     r' destination *:80 }',
     r'create ltm monitor tcp /' + PART + '/' + PREFIX_NAME + '_MON_TCP_KIBANA_SSL { defaults-from tcp'
@@ -87,6 +82,11 @@ MONITORS = [
     r' defaults-from tcp destination *:9418 }',
     r'create ltm monitor tcp /' + PART + '/' + PREFIX_NAME + '_MON_TCP_NOVA_PLACEMENT { defaults-from'
     r' tcp destination *:8780 }',
+    r'create ltm monitor http /' + PART + '/' + PREFIX_NAME + '_MON_HTTP_DESIGNATE {'
+    r' defaults-from http destination *:9001 recv "200 OK" send "HEAD /'
+    r' HTTP/1.1\r\nHost: rpc\r\n\r\n" }',
+    r'create ltm monitor tcp /' + PART + '/' + PREFIX_NAME + '_MON_TCP_OCTAVIA {'
+    r' defaults-from tcp destination *:9876 }',
     '\n'
 ]
 
@@ -177,9 +177,9 @@ SEC_AFM_RULES = (
     '\n### CREATE AFM LIST AND RULES ###\n'
     #Port Lists
     'create security firewall port-list RPC_VIP_PORTS '
-    '{ ports add { 80 { } 443 { } 3142 { } 3306 { } 3307 { } 5000 { } 6080 { } 6082 { } 8000 { } 8003 { } 8004 { } '
-    '8080 { } 8181 { } 8443 { } 8774 { } 8775 { } 8776 { } 8888 { } 9191 { } 9200 { } 9292 { } 9418 { } 9511 { } '
-    '9696 { } 35357 { } 8780 { } } }\n'
+    '{ ports add { 80 { } 443 { } 3142 { } 3306 { } 3307 { } 5000 { } 6082 { } 8000 { } 8004 { } '
+    '8080 { } 8181 { } 8443 { } 8774 { } 8775 { } 8776 { } 8888 { } 9001 { } 9200 { } 9292 { } 9418 { } 9511 { } '
+    '9696 { } 9876 { } 35357 { } 8780 { } } }\n'
     '\n'
     #Addr Lists
     'create security firewall address-list RPC_PUB_VIP_ALLOW_IPS { addresses add { 0.0.0.0/0 } }\n'
@@ -249,27 +249,11 @@ POOL_PARTS = {
         'x-forwarded-proto': True,
         'hosts': []
     },
-    'glance_registry': {
-        'port': 9191,
-        'backend_port': 9191,
-        'mon_type': '/' + PART + '/RPC-MON-EXT-ENDPOINT',
-        'group': 'glance_registry',
-        'hosts': []
-    },
     'heat_api_cfn': {
         'port': 8000,
         'backend_port': 8000,
         'mon_type': '/' + PART + '/' + PREFIX_NAME + '_MON_TCP_HEAT_API_CFN',
         'group': 'heat_api_cfn',
-        'make_public': True,
-        'x-forwarded-proto': True,
-        'hosts': []
-    },
-    'heat_api_cloudwatch': {
-        'port': 8003,
-        'backend_port': 8003,
-        'mon_type': '/' + PART + '/' + PREFIX_NAME + '_MON_TCP_HEAT_API_CLOUDWATCH',
-        'group': 'heat_api_cloudwatch',
         'make_public': True,
         'x-forwarded-proto': True,
         'hosts': []
@@ -331,15 +315,6 @@ POOL_PARTS = {
         'group': 'nova_console',
         'hosts': [],
         'ssl_impossible': True,
-        'make_public': True,
-        'persist': True
-    },
-    'nova_novnc_console': {
-        'port': 6080,
-        'backend_port': 6080,
-        'mon_type': '/' +  PART + '/' + PREFIX_NAME + '_MON_HTTP_NOVA_NOVNC_CONSOLE',
-        'group': 'nova_console',
-        'hosts': [],
         'make_public': True,
         'persist': True
     },
@@ -433,6 +408,24 @@ POOL_PARTS = {
         'backend_port': 8780,
         'mon_type': '/' + PART + '/' + PREFIX_NAME + '_MON_TCP_NOVA_PLACEMENT',
         'group': 'nova_api_placement',
+        'hosts': []
+    },
+    'designate_api': {
+        'port': 9001,
+        'backend_port': 9001,
+        'mon_type': '/' + PART + '/' + PREFIX_NAME + '_MON_HTTP_DESIGNATE',
+        'group': 'designate_api',
+        'make_public': True,
+        'x-forwarded-proto': True,
+        'hosts': []
+    },
+    'octavia_server': {
+        'port': 9876,
+        'backend_port': 9876,
+        'mon_type': '/' + PART + '/' + PREFIX_NAME + '_MON_TCP_OCTAVIA',
+        'group': 'octavia_server_container',
+        'make_public': True,
+        'x-forwarded-proto': True,
         'hosts': []
     }
 }
