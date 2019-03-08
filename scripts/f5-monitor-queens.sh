@@ -173,11 +173,6 @@ do_check() {
             #Heat API
             check_url="$check_proto://$check_ip:$check_port/v1/$tenant_id/stacks?"
             ;;
-        8080)
-            #Swift
-            check_url="$check_proto://$check_ip:$check_port/v1/AUTH_$tenant_id"
-            expected_statuses="200 204"
-            ;;
           *)
               # Guard
               echo "Invalid port specified; bailing out"
