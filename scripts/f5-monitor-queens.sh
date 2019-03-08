@@ -14,7 +14,7 @@ auth_ver="v3"
 
 # Auth args pulled from source file
 tenant="admin"
-user="admin"
+user="heat"
 pass="INSERTPWHERE"
 tenant_id="INSERTIDHERE"
 domain="Default"
