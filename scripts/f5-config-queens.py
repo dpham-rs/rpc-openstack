@@ -27,7 +27,7 @@ import netaddr
 
 PART = 'RPC'
 PREFIX_NAME = 'RPC'
-VERSION = 'RPC F5 Superman config script version Queens1.1'
+VERSION = 'RPC F5 Superman config script version Queens2.0'
 
 SNAT_POOL = (
     '### CREATE SNATPOOL ###\n'
@@ -58,11 +58,8 @@ MONITORS = [
     r'create ltm monitor http /' + PART + '/' + PREFIX_NAME + '_MON_HTTP_HORIZON { defaults-from http'
     r' destination *:80 recv "200 OK" send "HEAD /auth/login/ HTTP/1.1\r\nHost:'
     r' rpc\r\n\r\n" }',
-    r'create ltm monitor http /' + PART + '/' + PREFIX_NAME + '_MON_HTTP_NOVA_SPICE_CONSOLE {'
-    r' defaults-from http destination *:6082 recv "200 OK" send "HEAD /spice_auto.html'
-    r' HTTP/1.1\r\nHost: rpc\r\n\r\n" }',
-    r'create ltm monitor https /' + PART + '/' + PREFIX_NAME + '_MON_HTTPS_NOVA_SPICE_CONSOLE {'
-    r' defaults-from https destination *:6082 recv "200 OK" send "HEAD /'
+    r'create ltm monitor http /' + PART + '/' + PREFIX_NAME + '_MON_HTTP_NOVA_NOVNC_CONSOLE {'
+    r' defaults-from http destination *:6080 recv "200 OK" send "HEAD /vnc_lite.html'
     r' HTTP/1.1\r\nHost: rpc\r\n\r\n" }',
     r'create ltm monitor tcp /' + PART + '/' + PREFIX_NAME + '_MON_TCP_HEAT_API_CFN { defaults-from tcp'
     r' destination *:8000 }',
@@ -85,8 +82,13 @@ MONITORS = [
     r'create ltm monitor http /' + PART + '/' + PREFIX_NAME + '_MON_HTTP_DESIGNATE {'
     r' defaults-from http destination *:9001 recv "200 OK" send "HEAD /'
     r' HTTP/1.1\r\nHost: rpc\r\n\r\n" }',
+    r'create ltm monitor http /' + PART + '/' + PREFIX_NAME + '_MON_HTTP_SWIFT {'
+    r' defaults-from http destination *:8080 recv "200 OK" send "HEAD /'
+    r' HTTP/1.1\r\nHost: rpc\r\n\r\n" }',
     r'create ltm monitor tcp /' + PART + '/' + PREFIX_NAME + '_MON_TCP_OCTAVIA {'
     r' defaults-from tcp destination *:9876 }',
+    r'create ltm monitor tcp /' + PART + '/' + PREFIX_NAME + '_MON_TCP_DESIGNATE_BIND {'
+    r' defaults-from tcp destination *:53 }',
     '\n'
 ]
 
@@ -115,11 +117,34 @@ VIRTUAL_ENTRIES_PARTS = {
 
 PERSIST_OPTION = 'persist replace-all-with { /' + PART + '/' + PREFIX_NAME + '_PROF_PERSIST_IP }'
 
+IP_PROTO = 'ip'
 
 END_COMMANDS = [
     'save sys config',
     'run cm config-sync to-group SYNC-FAILOVER'
 ]
+
+CATCH_ALL_VIRTUAL_ENTRIES = (
+    'create ltm virtual /' + PART + '/%(vs_name)s {'
+    ' destination %(internal_lb_vip_address)s:%(port)s'
+    ' ip-protocol %(ip_proto)s mask 255.255.255.255'
+    ' pool /' + PART + '/%(pool_name)s'
+    r' profiles replace-all-with { /Common/fastL4 { } }'
+    ' %(persist)s'
+    ' source-address-translation { pool /' + PART + '/' + PREFIX_NAME + '_SNATPOOL type snat }'
+    ' }'
+)
+
+PUB_CATCH_ALL_VIRTUAL_ENTRIES = (
+    'create ltm virtual /' + PART + '/%(vs_name)s {'
+    ' destination %(ssl_public_ip)s:%(port)s'
+    ' ip-protocol %(ip_proto)s mask 255.255.255.255'
+    ' pool /' + PART + '/%(pool_name)s'
+    r' profiles replace-all-with { /Common/fastL4 { } }'
+    ' %(persist)s'
+    ' source-address-translation { pool /' + PART + '/' + PREFIX_NAME + '_SNATPOOL type snat }'
+    ' }'
+)
 
 VIRTUAL_ENTRIES = (
     'create ltm virtual /' + PART + '/%(vs_name)s {'
@@ -177,7 +202,7 @@ SEC_AFM_RULES = (
     '\n### CREATE AFM LIST AND RULES ###\n'
     #Port Lists
     'create security firewall port-list RPC_VIP_PORTS '
-    '{ ports add { 80 { } 443 { } 3142 { } 3306 { } 3307 { } 5000 { } 6082 { } 8000 { } 8004 { } '
+    '{ ports add { 53 { } 80 { } 443 { } 3142 { } 3306 { } 3307 { } 5000 { } 6080 { } 8000 { } 8004 { } '
     '8080 { } 8181 { } 8443 { } 8774 { } 8775 { } 8776 { } 8888 { } 9001 { } 9200 { } 9292 { } 9418 { } 9511 { } '
     '9696 { } 9876 { } 35357 { } 8780 { } } }\n'
     '\n'
@@ -308,13 +333,12 @@ POOL_PARTS = {
         'x-forwarded-proto': True,
         'hosts': []
     },
-    'nova_spice_console': {
-        'port': 6082,
-        'backend_port': 6082,
-        'mon_type': '/' + PART + '/' + PREFIX_NAME + '_MON_HTTP_NOVA_SPICE_CONSOLE',
+    'nova_novnc_console': {
+        'port': 6080,
+        'backend_port': 6080,
+        'mon_type': '/' +  PART + '/' + PREFIX_NAME + '_MON_HTTP_NOVA_NOVNC_CONSOLE',
         'group': 'nova_console',
         'hosts': [],
-        'ssl_impossible': True,
         'make_public': True,
         'persist': True
     },
@@ -374,7 +398,7 @@ POOL_PARTS = {
     'swift': {
         'port': 8080,
         'backend_port': 8080,
-        'mon_type': '/' + PART + '/RPC-MON-EXT-ENDPOINT',
+        'mon_type': '/' + PART + '_MON_HTTP_SWIFT',
         'group': 'swift_proxy',
         'make_public': True,
         'x-forwarded-proto': True,
@@ -417,6 +441,16 @@ POOL_PARTS = {
         'group': 'designate_api',
         'make_public': True,
         'x-forwarded-proto': True,
+        'hosts': []
+    },
+    'designate_bind': {
+        'port': 53,
+        'backend_port': 53,
+        'mon_type': '/' + PART + '/' + PREFIX_NAME + '_MON_TCP_DESIGNATE_BIND',
+        'group': 'designate_bind',
+        'make_public': True,
+        'ssl_impossible': True,
+        'catch_all': True,
         'hosts': []
     },
     'octavia_server': {
@@ -742,6 +776,7 @@ def main():
             virtual_dict = {
                 'port': value['port'],
                 'mirror_status': mirror_state,
+                'ip_proto': IP_PROTO,
                 'vs_name': value['vs_name'],
                 'pool_name': value['pool_name'],
                 'internal_lb_vip_address': lb_vip_address,
@@ -751,10 +786,17 @@ def main():
             }
 
 ##########################################
-            if not value.get('ssl_private'):
-                virt = '%s' % VIRTUAL_ENTRIES % virtual_dict
+
+            if value.get('catch_all'):
+                virt = '%s' % CATCH_ALL_VIRTUAL_ENTRIES % virtual_dict
                 if virt not in virts:
                     virts.append(virt)
+            else:
+                if not value.get('ssl_private'):
+                    virt = '%s' % VIRTUAL_ENTRIES % virtual_dict
+                    if virt not in virts:
+                        virts.append(virt)
+
             if value.get('ssl_private'):
                 virtual_dict['ltm_profiles'] = '/' + PART + '/' + PREFIX_NAME + '_X-FORWARDED-PROTO { } /' + PART + '/' + PREFIX_NAME + '_PROF_SSL_%(ssl_domain_name)s { context clientside }'% user_args
                 'RPC_PRI_SSL', value['group_name']
@@ -776,11 +818,14 @@ def main():
                         virtual_dict['vs_name'] = '%s_VS_%s' % (
                             'RPC_PUB', value['group_name']
                         )
-                        pubvirt = (
-                            '%s\n'
-                        ) % PUB_NONSSL_VIRTUAL_ENTRIES % virtual_dict
-                        if pubvirt not in pubvirts:
-                            pubvirts.append(pubvirt)
+                        if value.get('catch_all'):
+                            pubvirt = '%s' % PUB_CATCH_ALL_VIRTUAL_ENTRIES % virtual_dict
+                            if pubvirt not in pubvirts:
+                                pubvirts.append(pubvirt)
+                        else:
+                            pubvirt = '%s' % PUB_NONSSL_VIRTUAL_ENTRIES % virtual_dict
+                            if pubvirt not in pubvirts:
+                                pubvirts.append(pubvirt)
                     else:
                         virtual_dict['vs_name'] = '%s_VS_%s' % (
                         'RPC_PUB_SSL', value['group_name']
@@ -878,7 +923,6 @@ def main():
                 'sec_container_netmask': str(containernet.netmask)
             }
         )
-
 
     script.extend(afmrules)
     if user_args['afm']:
