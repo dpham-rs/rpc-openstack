@@ -58,11 +58,8 @@ MONITORS = [
     r'create ltm monitor http /' + PART + '/' + PREFIX_NAME + '_MON_HTTP_HORIZON { defaults-from http'
     r' destination *:80 recv "200 OK" send "HEAD /auth/login/ HTTP/1.1\r\nHost:'
     r' rpc\r\n\r\n" }',
-    r'create ltm monitor http /' + PART + '/' + PREFIX_NAME + '_MON_HTTP_NOVA_SPICE_CONSOLE {'
-    r' defaults-from http destination *:6082 recv "200 OK" send "HEAD /spice_auto.html'
-    r' HTTP/1.1\r\nHost: rpc\r\n\r\n" }',
-    r'create ltm monitor https /' + PART + '/' + PREFIX_NAME + '_MON_HTTPS_NOVA_SPICE_CONSOLE {'
-    r' defaults-from https destination *:6082 recv "200 OK" send "HEAD /'
+    r'create ltm monitor http /' + PART + '/' + PREFIX_NAME + '_MON_HTTP_NOVA_NOVNC_CONSOLE {'
+    r' defaults-from http destination *:6080 recv "200 OK" send "HEAD /vnc_lite.html'
     r' HTTP/1.1\r\nHost: rpc\r\n\r\n" }',
     r'create ltm monitor tcp /' + PART + '/' + PREFIX_NAME + '_MON_TCP_HEAT_API_CFN { defaults-from tcp'
     r' destination *:8000 }',
@@ -205,7 +202,7 @@ SEC_AFM_RULES = (
     '\n### CREATE AFM LIST AND RULES ###\n'
     #Port Lists
     'create security firewall port-list RPC_VIP_PORTS '
-    '{ ports add { 53 { } 80 { } 443 { } 3142 { } 3306 { } 3307 { } 5000 { } 6082 { } 8000 { } 8004 { } '
+    '{ ports add { 53 { } 80 { } 443 { } 3142 { } 3306 { } 3307 { } 5000 { } 6080 { } 8000 { } 8004 { } '
     '8080 { } 8181 { } 8443 { } 8774 { } 8775 { } 8776 { } 8888 { } 9001 { } 9200 { } 9292 { } 9418 { } 9511 { } '
     '9696 { } 9876 { } 35357 { } 8780 { } } }\n'
     '\n'
@@ -336,13 +333,12 @@ POOL_PARTS = {
         'x-forwarded-proto': True,
         'hosts': []
     },
-    'nova_spice_console': {
-        'port': 6082,
-        'backend_port': 6082,
-        'mon_type': '/' + PART + '/' + PREFIX_NAME + '_MON_HTTP_NOVA_SPICE_CONSOLE',
+    'nova_novnc_console': {
+        'port': 6080,
+        'backend_port': 6080,
+        'mon_type': '/' +  PART + '/' + PREFIX_NAME + '_MON_HTTP_NOVA_NOVNC_CONSOLE',
         'group': 'nova_console',
         'hosts': [],
-        'ssl_impossible': True,
         'make_public': True,
         'persist': True
     },
