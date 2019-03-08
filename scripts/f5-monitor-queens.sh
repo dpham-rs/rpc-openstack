@@ -7,14 +7,15 @@ exec 3>&1 &> /dev/null
 
 # Auth connection
 auth_proto="http"
-auth_ip="INSERT-IP-HERE"
+auth_ip="INSERT_IP_HERE"
     #Internal IP address of f5 VIP
 auth_port="5000"
 auth_ver="v3"
 
-# Auth args pulled from source file
+# Auth args pulled from deployment secrets file
 tenant="admin"
 user="heat"
+# Heat service password
 pass="INSERTPWHERE"
 tenant_id="INSERTIDHERE"
 domain="Default"
@@ -96,7 +97,6 @@ EOF
 `
         # Set token variable
         token=$(sed -nr '/\X-Subject-Token: (.*)$/ s//\1/p' <<< "${resp[@]}")
-        echo "Note:  Token=$token"
     fi
 
     if [[ "$token" == "" ]]; then
@@ -117,6 +117,7 @@ get_token() {
     if [[ -f /var/tmp/keystone-token-queens ]]; then
         # Read into token variable
         read -r token < /var/tmp/keystone-token-queens
+        token="$(echo -e "${token}" | tr -d '[:space:]')"
     else
         # Get new one
         new_token
@@ -173,10 +174,10 @@ do_check() {
             #Heat API
             check_url="$check_proto://$check_ip:$check_port/v1/$tenant_id/stacks?"
             ;;
-          *)
-              # Guard
-              echo "Invalid port specified; bailing out"
-              exit -1
+           *)
+            # Guard
+            echo "Invalid port specified; bailing out"
+            exit -1
     esac
 
     # Check endpoint
@@ -185,6 +186,7 @@ do_check() {
 
     # Store status code
     status="${resp[@]:(-1)}"
+
     # Check if we've got an expected status code
     for status_code in $expected_statuses; do
         if [[ "$status" == "$status_code" ]]; then
@@ -214,8 +216,7 @@ do_check() {
     fi
 }
 
-  # Get token
-  get_token
-  # Do endpoint check
-  do_check $1 $2
-  
+# Get token
+get_token
+# Do endpoint check
+do_check $1 $2
