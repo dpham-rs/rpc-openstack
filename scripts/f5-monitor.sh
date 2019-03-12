@@ -157,10 +157,6 @@ do_check() {
             #Glance API
             check_url="$check_proto://$check_ip:$check_port/v2/images"
             ;;
-        9191)
-            #Glance Registry
-            check_url="$check_proto://$check_ip:$check_port/"
-            ;;
         9696)
             #Neutron Server
             check_url="$check_proto://$check_ip:$check_port/v2.0/"
