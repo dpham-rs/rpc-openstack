@@ -56,15 +56,15 @@ ADDTCPMON = (
 )
 
 ADDNEWMON = (
-    # Adds PROPER EXTERNAL and HTTP MONITOR MITAKA to exisiting Pools
-    r'modify ltm pool /' + PART + '/' + PREFIX_NAME + '_POOL_CINDER_API' + ' { monitor ' + PREFIX_NAME + '-MON-EXT-ENDPOINT-MITAKA }',
-    r'modify ltm pool /' + PART + '/' + PREFIX_NAME + '_POOL_NOVA_API_OS_COMPUTE' + ' { monitor ' + PREFIX_NAME + '-MON-EXT-ENDPOINT-MITAKA }',
-    r'modify ltm pool /' + PART + '/' + PREFIX_NAME + '_POOL_NEUTRON_SERVER' + ' { monitor ' + PREFIX_NAME + '-MON-EXT-ENDPOINT-MITAKA }',
-    r'modify ltm pool /' + PART + '/' + PREFIX_NAME + '_POOL_KEYSTONE_SERVICE' + ' { monitor ' + PREFIX_NAME + '-MON-EXT-ENDPOINT-MITAKA }',
-    r'modify ltm pool /' + PART + '/' + PREFIX_NAME + '_POOL_GLANCE_API' + ' { monitor ' + PREFIX_NAME + '-MON-EXT-ENDPOINT-MITAKA }',
-    r'modify ltm pool /' + PART + '/' + PREFIX_NAME + '_POOL_GLANCE_REGISTRY' + ' { monitor ' + PREFIX_NAME + '-MON-EXT-ENDPOINT-MITAKA }',
-    r'modify ltm pool /' + PART + '/' + PREFIX_NAME + '_POOL_HEAT_API' + ' { monitor ' + PREFIX_NAME + '-MON-EXT-ENDPOINT-MITAKA }',
-    r'modify ltm pool /' + PART + '/' + PREFIX_NAME + '_POOL_SWIFT' + ' { monitor ' + PREFIX_NAME + '-MON-EXT-ENDPOINT-MITAKA }',
+    # Adds PROPER EXTERNAL and HTTP MONITOR NEWTON to exisiting Pools
+    r'modify ltm pool /' + PART + '/' + PREFIX_NAME + '_POOL_CINDER_API' + ' { monitor ' + PREFIX_NAME + '-MON-EXT-ENDPOINT-NEWTON }',
+    r'modify ltm pool /' + PART + '/' + PREFIX_NAME + '_POOL_NOVA_API_OS_COMPUTE' + ' { monitor ' + PREFIX_NAME + '-MON-EXT-ENDPOINT-NEWTON }',
+    r'modify ltm pool /' + PART + '/' + PREFIX_NAME + '_POOL_NEUTRON_SERVER' + ' { monitor ' + PREFIX_NAME + '-MON-EXT-ENDPOINT-NEWTON }',
+    r'modify ltm pool /' + PART + '/' + PREFIX_NAME + '_POOL_KEYSTONE_SERVICE' + ' { monitor ' + PREFIX_NAME + '-MON-EXT-ENDPOINT-NEWTON }',
+    r'modify ltm pool /' + PART + '/' + PREFIX_NAME + '_POOL_GLANCE_API' + ' { monitor ' + PREFIX_NAME + '-MON-EXT-ENDPOINT-NEWTON }',
+    r'modify ltm pool /' + PART + '/' + PREFIX_NAME + '_POOL_GLANCE_REGISTRY' + ' { monitor ' + PREFIX_NAME + '-MON-EXT-ENDPOINT-NEWTON }',
+    r'modify ltm pool /' + PART + '/' + PREFIX_NAME + '_POOL_HEAT_API' + ' { monitor ' + PREFIX_NAME + '-MON-EXT-ENDPOINT-NEWTON }',
+    r'modify ltm pool /' + PART + '/' + PREFIX_NAME + '_POOL_SWIFT' + ' { monitor ' + PREFIX_NAME + '-MON-EXT-ENDPOINT-NEWTON }',
     r'modify ltm pool /' + PART + '/' + PREFIX_NAME + '_POOL_HORIZON' + ' { monitor ' + PREFIX_NAME + '_MON_HTTP_HORIZON }',
     r'modify ltm pool /' + PART + '/' + PREFIX_NAME + '_POOL_HORIZON_SSL' + ' { monitor ' + PREFIX_NAME + '_MON_HTTP_HORIZON }'
 )
@@ -95,15 +95,15 @@ MONITORS = [
     r' defaults-from tcp destination *:9418 }'
 ]
 
-MITAKA_EXT_MON = [
+NEWTON_EXT_MON = [
         '   --> Upload External monitor file to disk <--',
         '       run util bash',
-        '       curl -k -o /config/monitors/RPC-MON-EXT-ENDPOINT-MITAKA.monitor https://raw.githubusercontent.com/dpham-rs/rpc-openstack/master/scripts/f5-monitor.sh',
+        '       curl -k -o /config/monitors/RPC-MON-EXT-ENDPOINT-NEWTON.monitor https://raw.githubusercontent.com/dpham-rs/rpc-openstack/master/scripts/f5-monitor-newton.sh',
         '       exit',
 
-        '       create sys file external-monitor /' + PART + '/RPC-MON-EXT-ENDPOINT-MITAKA { source-path file:///config/monitors/RPC-MON-EXT-ENDPOINT-MITAKA.monitor }',
+        '       create sys file external-monitor /' + PART + '/RPC-MON-EXT-ENDPOINT-NEWTON { source-path file:///config/monitors/RPC-MON-EXT-ENDPOINT-NEWTON.monitor }',
         '       save sys config',
-        '       create ltm monitor external /' + PART + '/RPC-MON-EXT-ENDPOINT-MITAKA { interval 20 timeout 61 run /' + PART + '/RPC-MON-EXT-ENDPOINT-MITAKA }\n'
+        '       create ltm monitor external /' + PART + '/RPC-MON-EXT-ENDPOINT-NEWTON { interval 20 timeout 61 run /' + PART + '/RPC-MON-EXT-ENDPOINT-NEWTON }\n'
         '   --> UDPATE External monitor VARIABLES!!! <--',
 ]
 
@@ -659,16 +659,16 @@ def main():
     script.extend([' '])
     script.extend(['\n### Lets ADD some temporary TCP MONITORS ###'])
     script.extend(['%s' % i % user_args for i in ADDTCPMON])
-    script.extend(['### Lets CREATE some Mitaka MONITORS ###'])
+    script.extend(['### Lets CREATE some Newton MONITORS ###'])
     script.extend(['%s' % i % user_args for i in MONITORS])
     script.extend(['%s' % i for i in commands])
-    script.extend(['\n### Lets UPLOAD and CREATE some Mitaka EXT MONITORS ###'])
-    script.extend(['%s' % i % user_args for i in MITAKA_EXT_MON])
-    script.extend(['\n### Lets CREATE some Mitaka NODES -may already exist- ###'])
+    script.extend(['\n### Lets UPLOAD and CREATE some Newton EXT MONITORS ###'])
+    script.extend(['%s' % i % user_args for i in NEWTON_EXT_MON])
+    script.extend(['\n### Lets CREATE some Newton NODES -may already exist- ###'])
     script.extend(['%s' % i % user_args for i in nodes])
-    script.extend(['\n### Lets CREATE some Mitaka POOLS ###'])
+    script.extend(['\n### Lets CREATE some Newton POOLS ###'])
     script.extend(pools)
-    script.extend(['\n### Lets CREATE some Mitaka VIRTUAL SERVERS ###'])
+    script.extend(['\n### Lets CREATE some Newton VIRTUAL SERVERS ###'])
     script.extend(virts)
     script.extend(sslvirts)
     script.extend(pubvirts)
@@ -678,11 +678,11 @@ def main():
     script.extend([' '])
     script.extend(['### Lets UPDATE some MONITORS ###'])
     script.extend(['%s' % i % user_args for i in MODMONS])
-    script.extend(['\n### Lets USE some MITAKA MONITORS ###'])
+    script.extend(['\n### Lets USE some NEWTON MONITORS ###'])
     script.extend(['%s' % i % user_args for i in ADDNEWMON])
-    script.extend(['\n### Lets MODIFY some Mitaka POOLS ###'])
+    script.extend(['\n### Lets MODIFY some NEWTON POOLS ###'])
     script.extend(modpools)
-    script.extend(['\n### Lets MODIFY some MITAKA VIRTUALS ###'])
+    script.extend(['\n### Lets MODIFY some NEWTON VIRTUALS ###'])
     script.extend(['%s' % i % user_args for i in MOD_VIRTUALS])
     script.extend(cleanup)
     script.extend(['\n### Lets CLEANUP some OLD STUFF ###'])
